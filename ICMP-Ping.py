@@ -118,7 +118,7 @@ def doOnePing(destAddr, timeout):
   return delay
 
 
-def ping(host, timeout=10):
+def ping(host, timeout=1):
   #timeout=1 means: If one second goes by without a reply from the server,
   #the client assumes that either the client's ping or the server's pong is lost
 
@@ -135,14 +135,15 @@ def ping(host, timeout=10):
 
   return delay
 
-print("Ping site do Google: ")
+print("Ping no site do Google: ")
 ping("google.com")
 print("\n")
 site = ""
 
-#while site != "Q" or "q":
-#  site = input("Enter the domain name of a site to ping, or Q to quit: ")
-#  print("For " + site)
-#  ping(site)
-#  print("\n")
+while site != "Q":
+  site = input("Entre o o nome do domínio para realizar o ping, ou Q (em maiúsculo) para sair: ")
+  if site != "Q":
+  	print("Ping no site " + site)
+  	ping(site)
+  	print("\n")
   
