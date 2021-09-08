@@ -148,16 +148,20 @@ def ping(host, msg, timeout=1):
   #timeout=1 means: If one second goes by without a reply from the server,
   #the client assumes that either the client's ping or the server's pong is lost
 
-  dest = socket.gethostbyname(host)
-  print("O domínio informado foi resolvido para o IP: " + dest)
+  try:
+    dest = socket.gethostbyname(host)
+    print("O domínio informado foi resolvido para o IP: " + dest)
 
-  # Send ping requests to a server separated by approximately one second.
-  # I will be sending a single ping message to each server.
-  print("Os campos do cabeçalho ICMP são: Type, Code, Checksum, ID, Sequence Number")
-  delay,msg = doOnePing(dest, msg, timeout)
-  print("O RTT calculado: "+ str(delay))
-  print("Mensagem escondida recuperada no echo reply: " + str(msg))
-  time.sleep(1)# one second
+    # Send ping requests to a server separated by approximately one second.
+    # I will be sending a single ping message to each server.
+    print("Os campos do cabeçalho ICMP são: Type, Code, Checksum, ID, Sequence Number")
+    delay, msg = doOnePing(dest, msg, timeout)
+    print("O RTT calculado: " + str(delay))
+    print("Mensagem escondida recuperada no echo reply: " + str(msg))
+    # time.sleep(1)# one second
+  except:
+    delay = 0
+    print("Não foi possível obter o IP do domínio informado.")
 
   return delay
 
