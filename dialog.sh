@@ -1,7 +1,12 @@
 #!/bin/bash
 
+INPUT_MSG(){
+	MSG=$(dialog --stdout --inputbox 'Por favor, informe a mensagem a ser escondida (lembre-se de delimitar a mensagem com aspas):' 0 0)
+}
+
 PING_GOOGLE(){
-	sudo python3 ICMP-Ping_Dialog.py google.com > /tmp/ping 
+  INPUT_MSG
+	sudo python3 ICMP-Ping_Dialog.py google.com "\"$MSG\"" > /tmp/ping
 	
 	dialog --stdout               \
              	    --title 'Ping google.com'  \
@@ -11,10 +16,10 @@ PING_GOOGLE(){
 
 
 PING_OUTROS(){
-
+  INPUT_MSG
 	DOMINIO=$(dialog --stdout --inputbox 'Por favor digite o dominio a ser pingado' 0 0)
 
-	sudo python3 ICMP-Ping_Dialog.py $DOMINIO > /tmp/ping
+	sudo python3 ICMP-Ping_Dialog.py $DOMINIO "\"$MSG\"" > /tmp/ping
 
 	dialog --textbox /tmp/ping 0 0
 
