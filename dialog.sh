@@ -1,7 +1,7 @@
 #!/bin/bash
 
 INPUT_MSG(){
-	MSG=$(dialog --stdout --inputbox 'Por favor, informe a mensagem a ser escondida (lembre-se de delimitar a mensagem com aspas):' 0 0)
+	MSG=$(dialog --stdout --inputbox 'Por favor, informe a mensagem a ser escondida:' 0 0)
 }
 
 PING_GOOGLE(){
