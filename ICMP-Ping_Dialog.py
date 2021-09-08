@@ -62,7 +62,7 @@ def receiveOnePing(mySocket, ID, timeout, destAddr):
     icmph = recPacket[20:28]
     type, code, checksum, pID, sq = struct.unpack("bbHHh", icmph)
 
-    print("ICMP Header: ",type, code, checksum, pID, sq)
+    print("O cabeçalho da resposta ICMP: ",type, code, checksum, pID, sq)
     if pID == ID:
       bytesinDbl = struct.calcsize("d")
       bytesinUnsignedInt = struct.calcsize("I")
@@ -76,6 +76,7 @@ def receiveOnePing(mySocket, ID, timeout, destAddr):
       start_pos_msg_size = end_pos_time
       end_pos_msg_size = start_pos_msg_size + bytesinUnsignedInt
       (i,), msg = struct.unpack("I", recPacket[start_pos_msg_size: end_pos_msg_size]), recPacket[end_pos_msg_size: ]
+      msg = msg.decode("utf-8")
 
       return rtt, msg
 
@@ -115,7 +116,7 @@ def sendOnePing(mySocket, msg, destAddr, ID):
   else:
     myChecksum = socket.htons(myChecksum)
 
-  print("ICMP Header: ", ICMP_ECHO_REQUEST,0,myChecksum,ID,1)
+  print("O cabeçalho da requisição ICMP: ", ICMP_ECHO_REQUEST,0,myChecksum,ID,1)
   header = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, myChecksum, ID, 1)
   packet = header + data
 
@@ -148,15 +149,14 @@ def ping(host, msg, timeout=1):
   #the client assumes that either the client's ping or the server's pong is lost
 
   dest = socket.gethostbyname(host)
-  print("Pinging " + dest + " using Python:")
-  print("\n")
+  print("O domínio informado foi resolvido para o IP: " + dest)
 
   # Send ping requests to a server separated by approximately one second.
   # I will be sending a single ping message to each server.
-  print("The header fields for ICMP are: Type, Code, Checksum, ID, Sequence Number")
+  print("Os campos do cabeçalho ICMP são: Type, Code, Checksum, ID, Sequence Number")
   delay,msg = doOnePing(dest, msg, timeout)
-  print(delay)
-  print("Mensagem escondida no ping: " + str(msg))
+  print("O RTT calculado: "+ str(delay))
+  print("Mensagem escondida recuperada no echo reply: " + str(msg))
   time.sleep(1)# one second
 
   return delay
