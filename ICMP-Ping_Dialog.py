@@ -12,16 +12,18 @@ import binascii
 ICMP_ECHO_REQUEST = 8
 
 def checksum(str):
-#  print("debug")
-#  print(str)
   csum = 0
+
   countTo = (len(str) / 2) * 2
-#  print(countTo)
+
+  #countTo = len(str)
+  #Trata mensagens de tamanho ímpar
+  #if len(str) % 2 == 1:
+  #  countTo = countTo - 1
+  #print(countTo)
 
   count = 0
   while count < countTo:
-#    print(str[count])
-#    print(str[count+1])
     thisVal = str[count+1] * 256 + str[count]
     csum = csum + thisVal
     csum = csum & 0xffffffff 
@@ -96,12 +98,12 @@ def sendOnePing(mySocket, msg, destAddr, ID):
 
   #Insere a mensagem escondida no ping
   msg_str = str(msg)
-
-  #Caso o tamanho da mensagem seja ímpar adiciona um espaço em branco no final
-  if len(msg_str) % 2 == 1:
-    msg_str+=" "
-
   msg_bytes = bytes(msg_str, 'utf-8')
+
+  # Caso o tamanho da mensagem seja ímpar adiciona um espaço em branco no final
+  if (len(msg_bytes) % 2 == 1):
+    msg_bytes = msg_bytes + bytes(" ", 'utf-8')
+
   data += struct.pack("I%ds" % (len(msg_bytes),), len(msg_bytes), msg_bytes)
 
   # Calculate the checksum on the data and the dummy header.
@@ -159,7 +161,9 @@ def ping(host, msg, timeout=1):
 
   return delay
 
-if __name__ == '__main__': 
-	print(sys.argv[1], sys.argv[2])
-	ping(sys.argv[1], sys.argv[2])
+if __name__ == '__main__':
+  print("Parâmetros recebidos")
+  print("Domínio a ser pingado: " + str(sys.argv[1]))
+  print("Mensagem a ser escondida: " + str(sys.argv[2]))
+  ping(sys.argv[1], sys.argv[2])
 
