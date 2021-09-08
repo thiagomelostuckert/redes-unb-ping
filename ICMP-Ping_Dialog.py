@@ -96,6 +96,11 @@ def sendOnePing(mySocket, msg, destAddr, ID):
 
   #Insere a mensagem escondida no ping
   msg_str = str(msg)
+
+  #Caso o tamanho da mensagem seja ímpar adiciona um espaço em branco no final
+  if len(msg_str) % 2 == 1:
+    msg_str+=" "
+
   msg_bytes = bytes(msg_str, 'utf-8')
   data += struct.pack("I%ds" % (len(msg_bytes),), len(msg_bytes), msg_bytes)
 
