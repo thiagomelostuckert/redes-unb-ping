@@ -6,7 +6,7 @@ Para executar o script é necessário estar com o Python3 instalado na máquina 
 sudo apt install python3.8
 
 Na criptografia dos dados é utilizada a biblioteca Crypto: 
-pip install pycryptodome==3.4.3
+sudo pip3 install pycryptodome==3.4.3
 
 
 # Execução

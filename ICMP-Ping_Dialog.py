@@ -5,11 +5,18 @@ import struct
 import time
 import select
 import binascii
+from Crypto.Cipher import AES
 
-
-# Para executar o script, use o comando: sudo python3 ICMP-Ping.py
-
+# Para executar o script, use o comando:
+# sudo python3 ICMP-Ping.py
 ICMP_ECHO_REQUEST = 8
+
+#Tamanhos da chave permitidas do AES: 16, 24 ou 32 bytes.
+key = b'Chave secreta!!!'
+
+#nonce e tag são obtidos na cifração da mensagem e são utilizados na decifração
+nonce = 'foo'
+tag = 'foo'
 
 def checksum(str):
   csum = 0
@@ -75,10 +82,18 @@ def receiveOnePing(mySocket, ID, timeout, destAddr):
       #Recupera a mensagem escondida no ping
       start_pos_msg_size = end_pos_time
       end_pos_msg_size = start_pos_msg_size + bytesinUnsignedInt
-      (i,), msg = struct.unpack("I", recPacket[start_pos_msg_size: end_pos_msg_size]), recPacket[end_pos_msg_size: ]
-      msg = msg.decode("utf-8")
+      (i,), msg_cifrada = struct.unpack("I", recPacket[start_pos_msg_size: end_pos_msg_size]), recPacket[end_pos_msg_size: ]
+      print("Mensagem cifrada recebida: "+str(msg_cifrada))
 
-      return rtt, msg
+      cipher = AES.new(key, AES.MODE_EAX, nonce=nonce)
+      msg_decifrada = cipher.decrypt(msg_cifrada)
+      try:
+        cipher.verify(tag)
+        print("Mensagem em claro:", msg_decifrada)
+      except ValueError:
+        print("Chave incorreta ou mensagem corrompida")
+
+      return rtt, msg_decifrada
 
 
     # Fill in end
@@ -102,6 +117,19 @@ def sendOnePing(mySocket, msg, destAddr, ID):
   msg_bytes = bytes(msg_str, 'utf-8')
 
   # Caso o tamanho da mensagem seja ímpar adiciona um espaço em branco no final
+  if (len(msg_bytes) % 2 == 1):
+    msg_bytes = msg_bytes + bytes(" ", 'utf-8')
+
+  #Cifra a mensagem
+  cipher = AES.new(key, AES.MODE_EAX)
+  global nonce
+  nonce = cipher.nonce
+  global tag
+  msg_bytes, tag = cipher.encrypt_and_digest(msg_bytes)
+
+  print("Mensagem cifrada enviada: "+ str(msg_bytes))
+
+  # Caso o tamanho da cifra seja ímpar adiciona um espaço em branco no final
   if (len(msg_bytes) % 2 == 1):
     msg_bytes = msg_bytes + bytes(" ", 'utf-8')
 
@@ -159,9 +187,9 @@ def ping(host, msg, timeout=1):
     print("O RTT calculado: " + str(delay))
     print("Mensagem escondida recuperada no echo reply: " + str(msg))
     # time.sleep(1)# one second
-  except:
+  except Exception as e:
     delay = 0
-    print("Não foi possível obter o IP do domínio informado.")
+    print(e)
 
   return delay
 
