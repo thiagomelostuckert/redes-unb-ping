@@ -11,5 +11,6 @@ sudo pip3 install pycryptodome==3.4.3
 
 # Execução
 Utilize o seguinte comando para executar o script:
-sudo python3 ICMP-Ping.py 
+sudo python3 ICMP-Ping_Dialog.py google.com "teste" "chave"
+
 
