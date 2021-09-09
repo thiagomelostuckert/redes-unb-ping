@@ -1,12 +1,17 @@
 #!/bin/bash
 
+INPUT_KEY(){
+	KEY=$(dialog --stdout --inputbox 'Por favor, informe a chave a ser utilizada na criptografia:' 0 0)
+}
+
 INPUT_MSG(){
 	MSG=$(dialog --stdout --inputbox 'Por favor, informe a mensagem a ser escondida:' 0 0)
 }
 
 PING_GOOGLE(){
   INPUT_MSG
-	sudo python3 ICMP-Ping_Dialog.py google.com "\"$MSG\"" > /tmp/ping
+  INPUT_KEY
+	sudo python3 ICMP-Ping_Dialog.py google.com "\"$MSG\"" "\"$KEY\""> /tmp/ping
 	
 	dialog --stdout               \
              	    --title 'Ping google.com'  \
@@ -17,9 +22,10 @@ PING_GOOGLE(){
 
 PING_OUTROS(){
   INPUT_MSG
+  INPUT_KEY
 	DOMINIO=$(dialog --stdout --inputbox 'Por favor digite o dominio a ser pingado' 0 0)
 
-	sudo python3 ICMP-Ping_Dialog.py $DOMINIO "\"$MSG\"" > /tmp/ping
+	sudo python3 ICMP-Ping_Dialog.py $DOMINIO "\"$MSG\"" "\"$KEY\""> /tmp/ping
 
 	dialog --textbox /tmp/ping 0 0
 

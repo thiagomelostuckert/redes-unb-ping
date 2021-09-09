@@ -172,7 +172,21 @@ def doOnePing(destAddr, msg, timeout):
   return delay
 
 
-def ping(host, msg, timeout=1):
+def ping(host, msg, arg_key, timeout=1):
+
+  #Trata para que a chave tenha algum dos tamanhos permitidos 16, 24 ou 32
+  if len(arg_key) < 16:
+    arg_key = arg_key.ljust(16)
+  elif len(arg_key) > 16 and len(arg_key) < 24:
+    arg_key = arg_key.ljust(24)
+  elif len(arg_key) > 24 and len(arg_key) < 32:
+    arg_key = arg_key.ljust(32)
+  elif len(arg_key) > 32:
+    arg_key = arg_key[:32]
+
+  global key
+  key = bytes(arg_key, encoding = "utf-8")
+
   #timeout=1 means: If one second goes by without a reply from the server,
   #the client assumes that either the client's ping or the server's pong is lost
 
@@ -197,5 +211,6 @@ if __name__ == '__main__':
   print("Parâmetros recebidos")
   print("Domínio a ser pingado: " + str(sys.argv[1]))
   print("Mensagem a ser escondida: " + str(sys.argv[2]))
-  ping(sys.argv[1], sys.argv[2])
+  print("Chave a ser utilizada na criptografia: " + str(sys.argv[3]))
+  ping(sys.argv[1], sys.argv[2], sys.argv[3])
 
