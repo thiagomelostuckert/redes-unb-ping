@@ -1,5 +1,9 @@
 #!/bin/bash
 
+INPUT_CRYPTO(){
+	CRYPTO=$(dialog --stdout --inputbox 'Por favor, informe se a criptografia estará habilitada ("Y" ou "N"):' 0 0)
+}
+
 INPUT_KEY(){
 	KEY=$(dialog --stdout --inputbox 'Por favor, informe a chave a ser utilizada na criptografia:' 0 0)
 }
@@ -10,22 +14,34 @@ INPUT_MSG(){
 
 PING_GOOGLE(){
   INPUT_MSG
-  INPUT_KEY
-	sudo python3 ICMP-Ping_Dialog.py google.com "\"$MSG\"" "\"$KEY\""> /tmp/ping
-	
-	dialog --stdout               \
-             	    --title 'Ping google.com'  \
-             	    --textbox /tmp/ping \
-             	    0 0 
+  INPUT_CRYPTO
+
+  if [ "$CRYPTO" = "Y" ] || [ "$CRYPTO" = "y" ];then
+    INPUT_KEY
+	  sudo python3 ICMP-Ping_Dialog.py google.com "\"$MSG\"" "\"$CRYPTO\"" "\"$KEY\""> /tmp/ping
+  else
+    sudo python3 ICMP-Ping_Dialog.py google.com "\"$MSG\"" "\"$CRYPTO\"" > /tmp/ping
+  fi
+
+  dialog --stdout               \
+        --title 'Ping google.com'  \
+        --textbox /tmp/ping \
+        0 0
 }
 
 
 PING_OUTROS(){
   INPUT_MSG
-  INPUT_KEY
-	DOMINIO=$(dialog --stdout --inputbox 'Por favor digite o dominio a ser pingado' 0 0)
+  INPUT_CRYPTO
 
-	sudo python3 ICMP-Ping_Dialog.py $DOMINIO "\"$MSG\"" "\"$KEY\""> /tmp/ping
+  DOMINIO=$(dialog --stdout --inputbox 'Por favor digite o dominio a ser pingado' 0 0)
+
+  if [ "$CRYPTO" = "Y" ] || [ "$CRYPTO" = "y" ];then
+    INPUT_KEY
+    sudo python3 ICMP-Ping_Dialog.py $DOMINIO "\"$MSG\"" "\"$CRYPTO\"" "\"$KEY\""> /tmp/ping
+  else
+    sudo python3 ICMP-Ping_Dialog.py $DOMINIO "\"$MSG\"" "\"$CRYPTO\"" > /tmp/ping
+  fi
 
 	dialog --textbox /tmp/ping 0 0
 
