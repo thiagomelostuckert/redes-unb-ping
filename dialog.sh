@@ -1,28 +1,42 @@
 #!/bin/bash
 
 PING_SIMPLES(){
-  DOMINIO=$(dialog --stdout --inputbox 'Por favor digite o dominio a ser pingado' 0 0)
+  DOMINIO=$(dialog --stdout --inputbox 'Por favor digite o destino a ser pingado' 0 0)
   MSG=""
   CRYPTO="N"
   sudo python3 ICMP-Ping_Dialog.py --Host $DOMINIO --Mensagem "\"$MSG\"" --Crypto $CRYPTO > /tmp/ping
-	dialog --textbox /tmp/ping 0 0
+
+	dialog --stdout               \
+      --title 'Ping simples'  \
+      --textbox /tmp/ping \
+      0 0
+
+
 }
 
 PING_AVANCADO(){
-  DOMINIO=$(dialog --stdout --inputbox 'Por favor digite o dominio a ser pingado' 0 0)
+  DOMINIO=$(dialog --stdout --inputbox 'Por favor digite o destino a ser pingado' 0 0)
   MSG=$(dialog --stdout --inputbox 'Por favor, informe a mensagem a ser escondida:' 0 0)
   CRYPTO="N"
   sudo python3 ICMP-Ping_Dialog.py --Host $DOMINIO --Mensagem "\"$MSG\"" --Crypto $CRYPTO > /tmp/ping
-	dialog --textbox /tmp/ping 0 0
+	dialog --stdout               \
+      --title 'Ping avançado'  \
+      --textbox /tmp/ping \
+      0 0
+
 }
 
 PING_CRIPTOGRAFADO(){
-  DOMINIO=$(dialog --stdout --inputbox 'Por favor digite o dominio a ser pingado' 0 0)
+  DOMINIO=$(dialog --stdout --inputbox 'Por favor digite o destino a ser pingado' 0 0)
   MSG=$(dialog --stdout --inputbox 'Por favor, informe a mensagem a ser escondida:' 0 0)
   CRYPTO="Y"
   KEY=$(dialog --stdout --inputbox 'Por favor, informe a chave a ser utilizada na criptografia:' 0 0)
   sudo python3 ICMP-Ping_Dialog.py --Host $DOMINIO --Mensagem "\"$MSG\"" --Crypto $CRYPTO --Key "\"$KEY\"" > /tmp/ping
-	dialog --textbox /tmp/ping 0 0
+
+	dialog --stdout               \
+      --title 'Ping criptografado'  \
+      --textbox /tmp/ping \
+      0 0
 }
 
 while : ; do

@@ -239,7 +239,7 @@ if __name__ == '__main__':
 
   print("Parâmetros recebidos")
   arg_host = str(given_args["Host"])
-  print("Domínio a ser pingado: " + arg_host)
+  print("Destino a ser pingado: " + arg_host)
   arg_mensagem = str(given_args["Mensagem"])
   print("Mensagem a ser escondida no ping: " + arg_mensagem)
   cryptoEnableArg = str(given_args["Crypto"])
