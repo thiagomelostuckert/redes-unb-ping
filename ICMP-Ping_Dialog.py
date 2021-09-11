@@ -75,7 +75,9 @@ def receiveOnePing(mySocket, ID, timeout, destAddr, use_crypto,key,nonce):
 
       size_packet = len(recPacket)
       host = addr[0]
-      ttl = 0
+
+      ipHeader = struct.unpack('!BBHHHBBH4s4s', recPacket[0:20])
+      ttl = ipHeader[5]
       delay = delay * 1000
       print("{} bytes from {}: icmp_seq={} ttl={} time={:.3f} ms".format(size_packet,host,icmp_seq,ttl, delay))
 
@@ -151,7 +153,8 @@ def ping(host, msg, use_crypto ,arg_key='foo', arg_nonce='foo', qtde_pings=3, ti
     packets_transmitted += 1
     try:
       delay, received = doOnePing(dest, msg, timeout,use_crypto,key,nonce)
-    except:
+    except Exception as e:
+      print(e)
       delay = 0
       received = False
 
