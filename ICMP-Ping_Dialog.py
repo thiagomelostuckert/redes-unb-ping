@@ -6,6 +6,7 @@ import time
 import select
 import argparse
 from crypto import trata_tamanho_chave,cifra,decifra
+import numpy as np
 
 # Para executar o script, use o comando:
 # sudo python3 ICMP-Ping_Dialog.py --Host "google.com" --Mensagem "msg a ser escondida" --Crypto "Y" --Key "chave da criptografia" --Nonce "nonce"
@@ -37,34 +38,31 @@ def checksum(str):
 
 def receiveOnePing(mySocket, ID, timeout, destAddr, use_crypto,key,nonce):
   timeLeft = timeout
-
+  delay = 0
+  received = False
   while 1:
 
     startedSelect = time.time()
     whatReady = select.select([mySocket], [], [], timeLeft)
     howLongInSelect = (time.time() - startedSelect)
     if whatReady[0] == []: # Timeout
-      return "Request timed out."
+      return delay, received
 
     timeReceived = time.time()
     recPacket, addr = mySocket.recvfrom(1024)
-    print()
-    #Fill in start
-    #Fetch the ICMP header from the IP packet
     icmph = recPacket[20:28]
 
-    type, code, checksum, pID, sq = struct.unpack("bbHHh", icmph)
+    type, code, checksum, pID, icmp_seq = struct.unpack("bbHHh", icmph)
 
-    print("O cabeçalho da resposta ICMP: ",type, code, checksum, pID, sq)
-    print("ID do ICMP: " + str(ID))
     if pID == ID:
+      received = True
       bytesinDbl = struct.calcsize("d")
       bytesinUnsignedInt = struct.calcsize("I")
 
       start_pos_time = 28
       end_pos_time = start_pos_time + bytesinDbl
       timeSent = struct.unpack("d", recPacket[start_pos_time:end_pos_time])[0]
-      rtt=timeReceived - timeSent
+      delay=timeReceived - timeSent
 
       #Recupera a mensagem escondida no ping
       start_pos_msg_size = end_pos_time
@@ -74,13 +72,20 @@ def receiveOnePing(mySocket, ID, timeout, destAddr, use_crypto,key,nonce):
         msg_decifrada = decifra(msg_cifrada,key,nonce)
       else:
         msg_decifrada = msg_cifrada
-        print("Mensagem em claro recebida: " + str(msg_decifrada))
 
-      return rtt, msg_decifrada
+      size_packet = len(recPacket)
+      host = addr[0]
+      ttl = 0
+      delay = delay * 1000
+      print("{} bytes from {}: icmp_seq={} ttl={} time={:.3f} ms".format(size_packet,host,icmp_seq,ttl, delay))
+
+      return delay, received
 
     timeLeft = timeLeft - howLongInSelect
     if timeLeft <= 0:
-      return "Request timed out."
+      delay = 0
+      received = False
+      return delay, received
 
 def sendOnePing(mySocket, msg, destAddr, ID, use_crypto,key,nonce):
   # Header is type (8), code (8), checksum (16), id (16), sequence (16)
@@ -110,7 +115,6 @@ def sendOnePing(mySocket, msg, destAddr, ID, use_crypto,key,nonce):
   else:
     myChecksum = socket.htons(myChecksum)
 
-  print("O cabeçalho da requisição ICMP: ", ICMP_ECHO_REQUEST,0,myChecksum,ID,1)
   header = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, myChecksum, ID, 1)
   packet = header + data
   mySocket.sendto(packet, (destAddr, 1))
@@ -120,29 +124,53 @@ def doOnePing(destAddr, msg, timeout,use_crypto,key,nonce):
   icmp = socket.getprotobyname("icmp")
   mySocket = socket.socket(socket.AF_INET, socket.SOCK_RAW, icmp)
   myID = os.getpid() & 0xFFFF
-  print("ID do ICMP: " + str(myID))
   sendOnePing(mySocket, msg, destAddr, myID,use_crypto,key,nonce)
-  delay = receiveOnePing(mySocket, myID, timeout, destAddr,use_crypto,key,nonce)
+  delay,received = receiveOnePing(mySocket, myID, timeout, destAddr,use_crypto,key,nonce)
   mySocket.close()
-  return delay
+  return delay,received
 
-def ping(host, msg, use_crypto, arg_key='foo', arg_nonce='foo', timeout=1):
+def ping(host, msg, use_crypto ,arg_key='foo', arg_nonce='foo', qtde_pings=3, timeout=1):
   key = bytes(trata_tamanho_chave(arg_key), encoding = "utf-8")
   nonce = bytes(arg_nonce, encoding = "utf-8")
 
-  try:
-    dest = socket.gethostbyname(host)
-    print("O domínio informado foi resolvido para o IP: " + dest)
+  dest = socket.gethostbyname(host)
+  if dest!=host:
+    print("PING {} ({})".format(str(host),str(dest)))
+  else:
+    print("Ping {}".format(host))
 
-    delay, msg = doOnePing(dest, msg, timeout,use_crypto,key,nonce)
-    print("O RTT calculado: " + str(delay))
-    print("Mensagem escondida recuperada no echo reply: " + str(msg))
+  delays =[]
+  delay_min = 0
+  delay_avg = 0
+  delay_max = 0
+  delay_stddev = 0
 
-  except Exception as e:
-    delay = 0
-    print(e)
+  packets_transmitted = 0
+  packets_received = 0
+  for i in range(0,qtde_pings):
+    packets_transmitted += 1
+    try:
+      delay, received = doOnePing(dest, msg, timeout,use_crypto,key,nonce)
+    except:
+      delay = 0
+      received = False
 
-  return delay
+    if (received == True):
+      packets_received += 1
+      delays.append(delay)
+
+  if packets_received > 0:
+    delay_min = np.min(delays)
+    delay_avg = np.average(delays)
+    delay_max = np.max(delays)
+    delay_stddev = np.std(delays)
+
+  print("--- {} ping statistics ---".format(host))
+  packet_loss = float(packets_received) / float(packets_transmitted)
+  packet_loss = packet_loss * 100
+  print("{} packets transmitted, {} packets received, {:.2f}% packet loss".format(packets_transmitted, packets_received, packet_loss))
+  print("round-trip min/avg/max/stddev = {:.3f}/{:.3f}/{:.3f}/{:.3f} ms".format(delay_min,delay_avg,delay_max,delay_stddev))
+
 
 if __name__ == '__main__':
 
@@ -155,22 +183,18 @@ if __name__ == '__main__':
 
   given_args = vars(parser.parse_args())
 
-  print("Parâmetros recebidos")
   arg_host = str(given_args["Host"])
-  print("Destino a ser pingado: " + arg_host)
   arg_mensagem = str(given_args["Mensagem"])
-  print("Mensagem a ser escondida no ping: " + arg_mensagem)
   cryptoEnableArg = str(given_args["Crypto"])
-  print("Habilitou a criptografia (Y|N): " + cryptoEnableArg)
   if cryptoEnableArg == 'Y':
+    qtde_pings = 1
     use_crypto = True
     arg_key = str(given_args["Key"])
-    print("Chave a ser utilizada na criptografia: " + arg_key)
     arg_nonce = str(given_args["Nonce"])
-    print("Nonce a ser utilizado na criptografia: " + arg_nonce)
   else:
+    qtde_pings = 3
     use_crypto = False
     arg_key = 'foo'
     arg_nonce= 'foo'
 
-  ping(arg_host, arg_mensagem, use_crypto,arg_key,arg_nonce)
+  ping(arg_host, arg_mensagem, use_crypto,arg_key,arg_nonce, qtde_pings)
