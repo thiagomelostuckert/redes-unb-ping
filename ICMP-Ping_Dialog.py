@@ -8,9 +8,10 @@ import binascii
 from Crypto.Cipher import AES
 from base64 import b64encode
 from base64 import b64decode
+import argparse
 
 # Para executar o script, use o comando:
-# sudo python3 ICMP-Ping_Dialog.py google.com "msg a ser escondida" "chave da criptografia"
+# sudo python3 ICMP-Ping_Dialog.py --Host "google.com" --Mensagem "msg a ser escondida" --Crypto "Y" --Key "chave da criptografia"
 
 ICMP_ECHO_REQUEST = 8
 
@@ -227,17 +228,29 @@ def ping(host, msg, use_crypto, arg_key, timeout=1):
   return delay
 
 if __name__ == '__main__':
+
+  parser = argparse.ArgumentParser(description='Script que realiza um Ping para a disciplina de redes')
+  parser.add_argument('--Host', action="store", help='Domínio a ser pingado', required=True)
+  parser.add_argument('--Mensagem', action="store", help='Mensagem a ser escondida no ping', required=True)
+  parser.add_argument('--Crypto', action="store", help='Habilitou a criptografia (Y|N)', required=True)
+  parser.add_argument('--Key', action="store", help='Chave a ser utilizada na criptografia', required=False)
+
+  given_args = vars(parser.parse_args())
+
   print("Parâmetros recebidos")
-  print("Domínio a ser pingado: " + str(sys.argv[1]))
-  print("Mensagem a ser escondida: " + str(sys.argv[2]))
-  print("Habilitou a criptografia (Y|N): " + str(sys.argv[3]))
-  if str(sys.argv[3]) == 'Y':
+  arg_host = str(given_args["Host"])
+  print("Domínio a ser pingado: " + arg_host)
+  arg_mensagem = str(given_args["Mensagem"])
+  print("Mensagem a ser escondida no ping: " + arg_mensagem)
+  cryptoEnableArg = str(given_args["Crypto"])
+  print("Habilitou a criptografia (Y|N): " + cryptoEnableArg)
+  if cryptoEnableArg == 'Y':
     use_crypto = True
-    print("Chave a ser utilizada na criptografia: " + str(sys.argv[4]))
-    arg_key = str(sys.argv[4])
+    arg_key = str(given_args["Key"])
+    print("Chave a ser utilizada na criptografia: " + arg_key)
   else:
     use_crypto = False
     arg_key = 'foo'
 
-  ping(sys.argv[1], sys.argv[2], use_crypto,arg_key)
+  ping(arg_host, arg_mensagem, use_crypto,arg_key)
 
