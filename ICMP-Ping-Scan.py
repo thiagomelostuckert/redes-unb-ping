@@ -8,20 +8,15 @@ import binascii
 from Crypto.Cipher import AES
 from base64 import b64encode
 from base64 import b64decode
+import argparse
+from crypto import trata_tamanho_chave,cifra,decifra
 
 # Para executar o script, use o comando:
-# sudo python3 ICMP-Ping-Scan.py "chave"
+# sudo python3 ICMP-Ping-Scan.py  --Crypto "Y" --Key "chave" --Nonce "nonce"
 
 ICMP_ECHO_REQUEST = 8
 
-#Tamanhos da chave permitidas do AES: 16, 24 ou 32 bytes.
-key = b'Chave secreta!!!'
-
-#nonce e tag são obtidos na cifração da mensagem e são utilizados na decifração
-nonce = 'foo'
-tag = 'foo'
-
-def receiveOnePing(mySocket,use_crypto):
+def receiveOnePing(mySocket,use_crypto, key,nonce):
   while 1:
     recPacket, addr = mySocket.recvfrom(1024)
     #Fill in start
@@ -33,9 +28,8 @@ def receiveOnePing(mySocket,use_crypto):
 
     print("ID do ICMP recebido: ", str(pID))
 
-    print("Por favor, informe o ID do Ping a ser recebido: ")
-    ID = input()
-    if str(pID) != str(ID):
+    opcao = input("Por favor, informe se é esse Ping que vc deseja decifrar (\"S\"/\"N\"): ")
+    if opcao != "S":
       continue
 
     bytesinDbl = struct.calcsize("d")
@@ -48,42 +42,15 @@ def receiveOnePing(mySocket,use_crypto):
     start_pos_msg_size = end_pos_time
     end_pos_msg_size = start_pos_msg_size + bytesinUnsignedInt
     (i,), msg_cifrada = struct.unpack("I", recPacket[start_pos_msg_size: end_pos_msg_size]), recPacket[end_pos_msg_size: ]
-
     if use_crypto == True:
-      print("Mensagem cifrada recebida: "+str(msg_cifrada))
-
-      print("Por favor, informe o nonce: ")
-      nonce = input()
-      nonce = b64decode(nonce)
-      print("Por favor, informe a tag: ")
-      tag = input()
-      tag = b64decode(tag)
-
-      cipher = AES.new(key, AES.MODE_EAX, nonce=nonce)
-      msg_decifrada = cipher.decrypt(msg_cifrada)
-      try:
-        cipher.verify(tag)
-        print("Mensagem em claro:", msg_decifrada)
-      except ValueError:
-        print("Chave incorreta ou mensagem corrompida")
+      msg_decifrada = decifra(msg_cifrada,key,nonce)
     else:
       msg_decifrada = msg_cifrada
       print("Mensagem em claro recebida: " + str(msg_decifrada))
 
-
-def ping(use_crypto, arg_key, timeout=1):
-  #Trata para que a chave tenha algum dos tamanhos permitidos 16, 24 ou 32
-  if len(arg_key) < 16:
-    arg_key = arg_key.ljust(16)
-  elif len(arg_key) > 16 and len(arg_key) < 24:
-    arg_key = arg_key.ljust(24)
-  elif len(arg_key) > 24 and len(arg_key) < 32:
-    arg_key = arg_key.ljust(32)
-  elif len(arg_key) > 32:
-    arg_key = arg_key[:32]
-
-  global key
-  key = bytes(arg_key, encoding = "utf-8")
+def ping(use_crypto, arg_key, arg_nonce, timeout=1):
+  key = bytes(trata_tamanho_chave(arg_key), encoding="utf-8")
+  nonce = bytes(arg_nonce, encoding="utf-8")
 
   icmp = socket.getprotobyname("icmp")
   #SOCK_RAW is a powerful socket type. For more details:   http://sock-raw.org/papers/sock_raw
@@ -91,19 +58,31 @@ def ping(use_crypto, arg_key, timeout=1):
   # Cria o socket
   mySocket = socket.socket(socket.AF_INET, socket.SOCK_RAW, icmp)
 
-  delay = receiveOnePing(mySocket,use_crypto)
+  delay = receiveOnePing(mySocket,use_crypto,key,nonce)
   mySocket.close()
 
 if __name__ == '__main__':
+
+  parser = argparse.ArgumentParser(description='Script que realiza um Ping para a disciplina de redes')
+  parser.add_argument('--Crypto', action="store", help='Habilitou a criptografia (Y|N)', required=True)
+  parser.add_argument('--Key', action="store", help='Chave a ser utilizada na criptografia', required=False)
+  parser.add_argument('--Nonce', action="store", help='Nonce a ser utilizado na criptografia', required=False)
+
+  given_args = vars(parser.parse_args())
+
   print("Parâmetros recebidos")
-  print("Habilitou a criptografia (Y|N): " + str(sys.argv[1]))
-  if str(sys.argv[1]) == 'Y':
+  cryptoEnableArg = str(given_args["Crypto"])
+  print("Habilitou a criptografia (Y|N): " + cryptoEnableArg)
+  if cryptoEnableArg == 'Y':
     use_crypto = True
-    print("Chave a ser utilizada na criptografia: " + str(sys.argv[2]))
-    arg_key = str(sys.argv[2])
+    arg_key = str(given_args["Key"])
+    print("Chave a ser utilizada na criptografia: " + arg_key)
+    arg_nonce = str(given_args["Nonce"])
+    print("Nonce a ser utilizado na criptografia: " + arg_nonce)
   else:
     use_crypto = False
     arg_key = 'foo'
+    arg_nonce= 'foo'
 
-  ping(use_crypto,arg_key)
+  ping(use_crypto,arg_key,arg_nonce)
 

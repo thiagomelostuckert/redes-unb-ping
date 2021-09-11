@@ -30,7 +30,7 @@ PING_CRIPTOGRAFADO(){
   CRYPTO="Y"
   KEY=$(dialog --stdout --inputbox 'Por favor, informe a chave a ser utilizada na criptografia:' 0 0)
   NONCE=$(dialog --stdout --inputbox 'Por favor, informe o nonce a ser utilizado na criptografia:' 0 0)
-  sudo python3 ICMP-Ping_Dialog.py --Host $DOMINIO --Mensagem "\"$MSG\"" --Crypto $CRYPTO --Key "\"$KEY\"" --Nonce "\"$NONCE\""> /tmp/ping
+  sudo python3 ICMP-Ping_Dialog.py --Host $DOMINIO --Mensagem "\"$MSG\"" --Crypto $CRYPTO --Key $KEY --Nonce $NONCE > /tmp/ping
 
 	dialog --stdout               \
       --title 'Ping criptografado'  \
