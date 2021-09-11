@@ -11,28 +11,19 @@ from base64 import b64decode
 import argparse
 
 # Para executar o script, use o comando:
-# sudo python3 ICMP-Ping_Dialog.py --Host "google.com" --Mensagem "msg a ser escondida" --Crypto "Y" --Key "chave da criptografia"
+# sudo python3 ICMP-Ping_Dialog.py --Host "google.com" --Mensagem "msg a ser escondida" --Crypto "Y" --Key "chave da criptografia" --Nonce "nonce"
 
 ICMP_ECHO_REQUEST = 8
 
 #Tamanhos da chave permitidas do AES: 16, 24 ou 32 bytes.
 key = b'Chave secreta!!!'
 
-#nonce e tag são obtidos na cifração da mensagem e são utilizados na decifração
+#nonce utilizado na criptografia
 nonce = 'foo'
-tag = 'foo'
 
 def checksum(str):
   csum = 0
-
   countTo = (len(str) / 2) * 2
-
-  #countTo = len(str)
-  #Trata mensagens de tamanho ímpar
-  #if len(str) % 2 == 1:
-  #  countTo = countTo - 1
-  #print(countTo)
-
   count = 0
   while count < countTo:
     thisVal = str[count+1] * 256 + str[count]
@@ -53,6 +44,21 @@ def checksum(str):
 
   return answer
 
+def decifra(msg_cifrada):
+  global key
+  global nonce
+  print("Mensagem cifrada recebida: " + str(msg_cifrada))
+
+
+  try:
+    cipher = AES.new(key, AES.MODE_CTR, nonce=nonce)
+    msg_decifrada = cipher.decrypt(msg_cifrada)
+    print("A mensagem em claro: ", str(msg_decifrada))
+  except:
+    print("Chave incorreta ou mensagem corrompida")
+    msg_decifrada = 'error'
+
+  return msg_decifrada
 
 def receiveOnePing(mySocket, ID, timeout, destAddr, use_crypto):
   timeLeft = timeout
@@ -88,37 +94,34 @@ def receiveOnePing(mySocket, ID, timeout, destAddr, use_crypto):
       end_pos_msg_size = start_pos_msg_size + bytesinUnsignedInt
       (i,), msg_cifrada = struct.unpack("I", recPacket[start_pos_msg_size: end_pos_msg_size]), recPacket[end_pos_msg_size: ]
       if use_crypto == True:
-        print("Mensagem cifrada recebida: "+str(msg_cifrada))
-        global nonce
-        nonce = b64decode(nonce)
-        cipher = AES.new(key, AES.MODE_EAX, nonce=nonce)
-        msg_decifrada = cipher.decrypt(msg_cifrada)
-        try:
-          global tag
-          tag = b64decode(tag)
-          cipher.verify(tag)
-          print("Mensagem em claro:", msg_decifrada)
-        except ValueError:
-          print("Chave incorreta ou mensagem corrompida")
+        msg_decifrada = decifra(msg_cifrada)
       else:
         msg_decifrada = msg_cifrada
         print("Mensagem em claro recebida: " + str(msg_decifrada))
 
       return rtt, msg_decifrada
 
-
-    # Fill in end
-
     timeLeft = timeLeft - howLongInSelect
     if timeLeft <= 0:
       return "Request timed out."
 
+
+def cifra(msg_bytes):
+  global key
+  global nonce
+  cipher = AES.new(key, AES.MODE_CTR, nonce=nonce)
+  msg_bytes = cipher.encrypt(msg_bytes)
+  print("Mensagem cifrada enviada: " + str(msg_bytes))
+
+  # Caso o tamanho da cifra seja ímpar adiciona um espaço em branco no final
+  if (len(msg_bytes) % 2 == 1):
+    msg_bytes = msg_bytes + bytes(" ", 'utf-8')
+
+  return msg_bytes
+
 def sendOnePing(mySocket, msg, destAddr, ID, use_crypto=False):
   # Header is type (8), code (8), checksum (16), id (16), sequence (16)
   myChecksum = 0
-  # Make a dummy header with a 0 checksum.
-  # struct -- Interpret strings as packed binary data
-
   header = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, myChecksum, ID, 1)
 
   timeSent = time.time()
@@ -133,68 +136,35 @@ def sendOnePing(mySocket, msg, destAddr, ID, use_crypto=False):
     msg_bytes = msg_bytes + bytes(" ", 'utf-8')
 
   if use_crypto == True:
-    #Cifra a mensagem
-    cipher = AES.new(key, AES.MODE_EAX)
-    global nonce
-    nonce = b64encode(cipher.nonce).decode('utf-8')
-    print("Nonce: "+nonce)
-
-    global tag
-    msg_bytes, tag = cipher.encrypt_and_digest(msg_bytes)
-
-    tag = b64encode(tag).decode('utf-8')
-    print("Tag: "+tag)
-
-    print("Mensagem cifrada enviada: "+ str(msg_bytes))
-
-    # Caso o tamanho da cifra seja ímpar adiciona um espaço em branco no final
-    if (len(msg_bytes) % 2 == 1):
-      msg_bytes = msg_bytes + bytes(" ", 'utf-8')
+    msg_bytes = cifra(msg_bytes)
 
   data += struct.pack("I%ds" % (len(msg_bytes),), len(msg_bytes), msg_bytes)
 
-  # Calculate the checksum on the data and the dummy header.
   myChecksum = checksum(header + data)
 
-  #Get the right checksum, and put in the header
   if sys.platform == 'darwin':
-    myChecksum = socket.htons(myChecksum) & 0xffff   #Convert 16-bit integers from host to network byte order.
+    myChecksum = socket.htons(myChecksum) & 0xffff
   else:
     myChecksum = socket.htons(myChecksum)
 
   print("O cabeçalho da requisição ICMP: ", ICMP_ECHO_REQUEST,0,myChecksum,ID,1)
   header = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, myChecksum, ID, 1)
   packet = header + data
-
   mySocket.sendto(packet, (destAddr, 1))
-  # AF_INET address must be tuple, not str.
-  # Both LISTS and TUPLES consist of a number of objects
-  # which can be referenced by their position number within the object.
 
 
 def doOnePing(destAddr, msg, timeout,use_crypto=False):
-
   icmp = socket.getprotobyname("icmp")
-  #SOCK_RAW is a powerful socket type. For more details:   http://sock-raw.org/papers/sock_raw
-
-  # Fill in start
-  # Create socket here.
   mySocket = socket.socket(socket.AF_INET, socket.SOCK_RAW, icmp)
-
-  # Fill in end
-  myID = os.getpid() & 0xFFFF  #Return the current process i
+  myID = os.getpid() & 0xFFFF
   print("ID do ICMP: " + str(myID))
-
   sendOnePing(mySocket, msg, destAddr, myID,use_crypto)
   delay = receiveOnePing(mySocket, myID, timeout, destAddr,use_crypto)
   mySocket.close()
-
   return delay
 
-
-def ping(host, msg, use_crypto, arg_key, timeout=1):
-
-  #Trata para que a chave tenha algum dos tamanhos permitidos 16, 24 ou 32
+def trata_tamanho_chave(arg_key):
+  # Trata para que a chave tenha algum dos tamanhos permitidos 16, 24 ou 32
   if len(arg_key) < 16:
     arg_key = arg_key.ljust(16)
   elif len(arg_key) > 16 and len(arg_key) < 24:
@@ -203,24 +173,23 @@ def ping(host, msg, use_crypto, arg_key, timeout=1):
     arg_key = arg_key.ljust(32)
   elif len(arg_key) > 32:
     arg_key = arg_key[:32]
+  return arg_key
+
+def ping(host, msg, use_crypto, arg_key='foo', arg_nonce='foo', timeout=1):
 
   global key
-  key = bytes(arg_key, encoding = "utf-8")
-
-  #timeout=1 means: If one second goes by without a reply from the server,
-  #the client assumes that either the client's ping or the server's pong is lost
+  key = bytes(trata_tamanho_chave(arg_key), encoding = "utf-8")
+  global nonce
+  nonce = bytes(arg_nonce, encoding = "utf-8")
 
   try:
     dest = socket.gethostbyname(host)
     print("O domínio informado foi resolvido para o IP: " + dest)
 
-    # Send ping requests to a server separated by approximately one second.
-    # I will be sending a single ping message to each server.
-    print("Os campos do cabeçalho ICMP são: Type, Code, Checksum, ID, Sequence Number")
     delay, msg = doOnePing(dest, msg, timeout,use_crypto)
     print("O RTT calculado: " + str(delay))
     print("Mensagem escondida recuperada no echo reply: " + str(msg))
-    # time.sleep(1)# one second
+
   except Exception as e:
     delay = 0
     print(e)
@@ -234,6 +203,7 @@ if __name__ == '__main__':
   parser.add_argument('--Mensagem', action="store", help='Mensagem a ser escondida no ping', required=True)
   parser.add_argument('--Crypto', action="store", help='Habilitou a criptografia (Y|N)', required=True)
   parser.add_argument('--Key', action="store", help='Chave a ser utilizada na criptografia', required=False)
+  parser.add_argument('--Nonce', action="store", help='Nonce a ser utilizado na criptografia', required=False)
 
   given_args = vars(parser.parse_args())
 
@@ -248,9 +218,11 @@ if __name__ == '__main__':
     use_crypto = True
     arg_key = str(given_args["Key"])
     print("Chave a ser utilizada na criptografia: " + arg_key)
+    arg_nonce = str(given_args["Nonce"])
+    print("Nonce a ser utilizado na criptografia: " + arg_nonce)
   else:
     use_crypto = False
     arg_key = 'foo'
+    arg_nonce= 'foo'
 
-  ping(arg_host, arg_mensagem, use_crypto,arg_key)
-
+  ping(arg_host, arg_mensagem, use_crypto,arg_key,arg_nonce)

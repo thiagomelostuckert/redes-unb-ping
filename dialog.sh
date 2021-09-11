@@ -10,8 +10,6 @@ PING_SIMPLES(){
       --title 'Ping simples'  \
       --textbox /tmp/ping \
       0 0
-
-
 }
 
 PING_AVANCADO(){
@@ -31,7 +29,8 @@ PING_CRIPTOGRAFADO(){
   MSG=$(dialog --stdout --inputbox 'Por favor, informe a mensagem a ser escondida:' 0 0)
   CRYPTO="Y"
   KEY=$(dialog --stdout --inputbox 'Por favor, informe a chave a ser utilizada na criptografia:' 0 0)
-  sudo python3 ICMP-Ping_Dialog.py --Host $DOMINIO --Mensagem "\"$MSG\"" --Crypto $CRYPTO --Key "\"$KEY\"" > /tmp/ping
+  NONCE=$(dialog --stdout --inputbox 'Por favor, informe o nonce a ser utilizado na criptografia:' 0 0)
+  sudo python3 ICMP-Ping_Dialog.py --Host $DOMINIO --Mensagem "\"$MSG\"" --Crypto $CRYPTO --Key "\"$KEY\"" --Nonce "\"$NONCE\""> /tmp/ping
 
 	dialog --stdout               \
       --title 'Ping criptografado'  \
