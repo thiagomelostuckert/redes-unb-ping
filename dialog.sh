@@ -5,7 +5,7 @@ PING_SIMPLES(){
   MSG=""
   CRYPTO="N"
   QTDE=3
-  sudo python3 ICMP-Ping_Dialog.py --Host $DOMINIO --Mensagem "\"$MSG\"" --Crypto $CRYPTO --Qtde $QTDE > /tmp/ping
+  sudo python3 ICMP-Ping_Dialog.py --Host $DOMINIO --Crypto $CRYPTO --Qtde $QTDE > /tmp/ping
 
 	dialog --stdout               \
       --title 'Ping simples'  \

@@ -141,6 +141,9 @@ def ping(host, msg, use_crypto ,arg_key='foo', arg_nonce='foo', qtde_pings=3, ti
   else:
     print("Ping {}".format(host))
 
+  if msg != "":
+    print("Mensagem a ser escondida: "+str(msg))
+
   delays =[]
   delay_min = 0
   delay_avg = 0
@@ -179,7 +182,7 @@ if __name__ == '__main__':
 
   parser = argparse.ArgumentParser(description='Script que realiza um Ping para a disciplina de redes')
   parser.add_argument('--Host', action="store", help='Domínio a ser pingado', required=True)
-  parser.add_argument('--Mensagem', action="store", help='Mensagem a ser escondida no ping', required=True)
+  parser.add_argument('--Mensagem', action="store", help='Mensagem a ser escondida no ping', required=False)
   parser.add_argument('--Crypto', action="store", help='Habilitou a criptografia (Y|N)', required=True)
   parser.add_argument('--Key', action="store", help='Chave a ser utilizada na criptografia', required=False)
   parser.add_argument('--Nonce', action="store", help='Nonce a ser utilizado na criptografia', required=False)
@@ -188,7 +191,12 @@ if __name__ == '__main__':
   given_args = vars(parser.parse_args())
 
   arg_host = str(given_args["Host"])
-  arg_mensagem = str(given_args["Mensagem"])
+
+  if given_args["Mensagem"] is not None:
+    arg_mensagem = str(given_args["Mensagem"])
+  else:
+    arg_mensagem = ""
+
   cryptoEnableArg = str(given_args["Crypto"])
   if cryptoEnableArg == 'Y':
     qtde_pings = 1
@@ -201,7 +209,7 @@ if __name__ == '__main__':
     arg_key = 'foo'
     arg_nonce= 'foo'
 
-  if "Qtde" in given_args:
+  if given_args["Qtde"] is not None:
     qtde_pings = int(given_args["Qtde"])
 
   ping(arg_host, arg_mensagem, use_crypto,arg_key,arg_nonce, qtde_pings)
