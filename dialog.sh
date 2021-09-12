@@ -4,7 +4,8 @@ PING_SIMPLES(){
   DOMINIO=$(dialog --stdout --inputbox 'Por favor digite o destino a ser pingado' 0 0)
   MSG=""
   CRYPTO="N"
-  sudo python3 ICMP-Ping_Dialog.py --Host $DOMINIO --Mensagem "\"$MSG\"" --Crypto $CRYPTO > /tmp/ping
+  QTDE=3
+  sudo python3 ICMP-Ping_Dialog.py --Host $DOMINIO --Mensagem "\"$MSG\"" --Crypto $CRYPTO --Qtde $QTDE > /tmp/ping
 
 	dialog --stdout               \
       --title 'Ping simples'  \
@@ -16,7 +17,8 @@ PING_AVANCADO(){
   DOMINIO=$(dialog --stdout --inputbox 'Por favor digite o destino a ser pingado' 0 0)
   MSG=$(dialog --stdout --inputbox 'Por favor, informe a mensagem a ser escondida:' 0 0)
   CRYPTO="N"
-  sudo python3 ICMP-Ping_Dialog.py --Host $DOMINIO --Mensagem "\"$MSG\"" --Crypto $CRYPTO > /tmp/ping
+  QTDE=1
+  sudo python3 ICMP-Ping_Dialog.py --Host $DOMINIO --Mensagem "\"$MSG\"" --Crypto $CRYPTO --Qtde $QTDE > /tmp/ping
 	dialog --stdout               \
       --title 'Ping avançado'  \
       --textbox /tmp/ping \
@@ -30,7 +32,8 @@ PING_CRIPTOGRAFADO(){
   CRYPTO="Y"
   KEY=$(dialog --stdout --inputbox 'Por favor, informe a chave a ser utilizada na criptografia:' 0 0)
   NONCE=$(dialog --stdout --inputbox 'Por favor, informe o nonce a ser utilizado na criptografia:' 0 0)
-  sudo python3 ICMP-Ping_Dialog.py --Host $DOMINIO --Mensagem "\"$MSG\"" --Crypto $CRYPTO --Key $KEY --Nonce $NONCE > /tmp/ping
+  QTDE=1
+  sudo python3 ICMP-Ping_Dialog.py --Host $DOMINIO --Mensagem "\"$MSG\"" --Crypto $CRYPTO --Key $KEY --Nonce $NONCE --Qtde $QTDE > /tmp/ping
 
 	dialog --stdout               \
       --title 'Ping criptografado'  \

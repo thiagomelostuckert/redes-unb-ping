@@ -9,7 +9,7 @@ from crypto import trata_tamanho_chave,cifra,decifra
 import numpy as np
 
 # Para executar o script, use o comando:
-# sudo python3 ICMP-Ping_Dialog.py --Host "google.com" --Mensagem "msg a ser escondida" --Crypto "Y" --Key "chave da criptografia" --Nonce "nonce"
+# sudo python3 ICMP-Ping_Dialog.py --Host "google.com" --Mensagem "msg a ser escondida" --Crypto "Y" --Key "chave" --Nonce "nonce" --Qtde 1
 
 ICMP_ECHO_REQUEST = 8
 
@@ -169,7 +169,7 @@ def ping(host, msg, use_crypto ,arg_key='foo', arg_nonce='foo', qtde_pings=3, ti
     delay_stddev = np.std(delays)
 
   print("--- {} ping statistics ---".format(host))
-  packet_loss = float(packets_received) / float(packets_transmitted)
+  packet_loss = float(packets_transmitted - packets_received) / float(packets_transmitted)
   packet_loss = packet_loss * 100
   print("{} packets transmitted, {} packets received, {:.2f}% packet loss".format(packets_transmitted, packets_received, packet_loss))
   print("round-trip min/avg/max/stddev = {:.3f}/{:.3f}/{:.3f}/{:.3f} ms".format(delay_min,delay_avg,delay_max,delay_stddev))
@@ -183,6 +183,7 @@ if __name__ == '__main__':
   parser.add_argument('--Crypto', action="store", help='Habilitou a criptografia (Y|N)', required=True)
   parser.add_argument('--Key', action="store", help='Chave a ser utilizada na criptografia', required=False)
   parser.add_argument('--Nonce', action="store", help='Nonce a ser utilizado na criptografia', required=False)
+  parser.add_argument('--Qtde', action="store", help='Quantidade de pigns a ser enviado', required=False)
 
   given_args = vars(parser.parse_args())
 
@@ -199,5 +200,8 @@ if __name__ == '__main__':
     use_crypto = False
     arg_key = 'foo'
     arg_nonce= 'foo'
+
+  if "Qtde" in given_args:
+    qtde_pings = int(given_args["Qtde"])
 
   ping(arg_host, arg_mensagem, use_crypto,arg_key,arg_nonce, qtde_pings)
