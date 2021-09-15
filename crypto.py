@@ -1,21 +1,26 @@
 from Crypto.Cipher import AES
 
-def decifra(msg_cifrada,key,nonce):
-  print("Mensagem cifrada recebida: " + str(msg_cifrada))
+def decifra(msg_cifrada,key,nonce, printMessages=True):
+
+  if printMessages == True: 
+    print("Mensagem cifrada recebida: " + str(msg_cifrada))
   try:
     cipher = AES.new(key, AES.MODE_CTR, nonce=nonce)
     msg_decifrada = cipher.decrypt(msg_cifrada)
-    print("A mensagem em claro: ", str(msg_decifrada))
+    if printMessages == True: 
+    	print("A mensagem em claro: ", str(msg_decifrada))
   except:
-    print("Chave incorreta ou mensagem corrompida")
+    if printMessages == True: 
+    	print("Chave incorreta ou mensagem corrompida")
     msg_decifrada = 'error'
 
   return msg_decifrada
 
-def cifra(msg_bytes,key,nonce):
+def cifra(msg_bytes,key,nonce, printMessages=True):
   cipher = AES.new(key, AES.MODE_CTR, nonce=nonce)
   msg_bytes = cipher.encrypt(msg_bytes)
-  print("Mensagem cifrada enviada: " + str(msg_bytes))
+  if printMessages == True: 
+    print("Mensagem cifrada enviada: " + str(msg_bytes))
 
   # Caso o tamanho da cifra seja ímpar adiciona um espaço em branco no final
   if (len(msg_bytes) % 2 == 1):

@@ -36,7 +36,7 @@ def checksum(str):
 
   return answer
 
-def receiveOnePing(mySocket, ID, timeout, destAddr, use_crypto,key,nonce):
+def receiveOnePing(mySocket, ID, timeout, destAddr, use_crypto,key,nonce,printMessages):
   timeLeft = timeout
   delay = 0
   received = False
@@ -69,7 +69,7 @@ def receiveOnePing(mySocket, ID, timeout, destAddr, use_crypto,key,nonce):
       end_pos_msg_size = start_pos_msg_size + bytesinUnsignedInt
       (i,), msg_cifrada = struct.unpack("I", recPacket[start_pos_msg_size: end_pos_msg_size]), recPacket[end_pos_msg_size: ]
       if use_crypto == True:
-        msg_decifrada = decifra(msg_cifrada,key,nonce)
+        msg_decifrada = decifra(msg_cifrada,key,nonce,printMessages)
       else:
         msg_decifrada = msg_cifrada
 
@@ -89,7 +89,7 @@ def receiveOnePing(mySocket, ID, timeout, destAddr, use_crypto,key,nonce):
       received = False
       return delay, received
 
-def sendOnePing(mySocket, msg, destAddr, ID, use_crypto,key,nonce):
+def sendOnePing(mySocket, msg, destAddr, ID, use_crypto,key,nonce,printMessages):
   # Header is type (8), code (8), checksum (16), id (16), sequence (16)
   myChecksum = 0
   header = struct.pack("bbHHh", ICMP_ECHO_REQUEST, 0, myChecksum, ID, 1)
@@ -106,7 +106,7 @@ def sendOnePing(mySocket, msg, destAddr, ID, use_crypto,key,nonce):
     msg_bytes = msg_bytes + bytes(" ", 'utf-8')
 
   if use_crypto == True:
-    msg_bytes = cifra(msg_bytes,key,nonce)
+    msg_bytes = cifra(msg_bytes,key,nonce,printMessages)
 
   data += struct.pack("I%ds" % (len(msg_bytes),), len(msg_bytes), msg_bytes)
 
@@ -122,12 +122,12 @@ def sendOnePing(mySocket, msg, destAddr, ID, use_crypto,key,nonce):
   mySocket.sendto(packet, (destAddr, 1))
 
 
-def doOnePing(destAddr, msg, timeout,use_crypto,key,nonce):
+def doOnePing(destAddr, msg, timeout,use_crypto,key,nonce,printMessages):
   icmp = socket.getprotobyname("icmp")
   mySocket = socket.socket(socket.AF_INET, socket.SOCK_RAW, icmp)
   myID = os.getpid() & 0xFFFF
-  sendOnePing(mySocket, msg, destAddr, myID,use_crypto,key,nonce)
-  delay,received = receiveOnePing(mySocket, myID, timeout, destAddr,use_crypto,key,nonce)
+  sendOnePing(mySocket, msg, destAddr, myID,use_crypto,key,nonce,printMessages)
+  delay,received = receiveOnePing(mySocket, myID, timeout, destAddr,use_crypto,key,nonce,printMessages)
   mySocket.close()
   return delay,received
 
@@ -152,10 +152,14 @@ def ping(host, msg, use_crypto ,arg_key='foo', arg_nonce='foo', qtde_pings=3, ti
 
   packets_transmitted = 0
   packets_received = 0
+  printMessages = False
   for i in range(0,qtde_pings):
+    if i == qtde_pings - 1: 
+    	printMessages = True
+    	
     packets_transmitted += 1
     try:
-      delay, received = doOnePing(dest, msg, timeout,use_crypto,key,nonce)
+      delay, received = doOnePing(dest, msg, timeout,use_crypto,key,nonce,printMessages)
     except Exception as e:
       print(e)
       delay = 0
